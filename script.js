@@ -1,23 +1,82 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roundtrip Route Planner</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <h2>Roundtrip Route Planner</h2>
-    <p>Enter addresses and their zip codes below. We will organize the shortest route to make a round trip.</p>
+let addresses = [];
+let map;
+let routeLines = [];
+let colorIndex = 0;
+const colors = ["#FF5733", "#33FF57", "#3357FF", "#F9A800", "#8E44AD"];
 
-    <div id="addresses"></div>
+function addAddress() {
+    const addressDiv = document.createElement('div');
+    addressDiv.classList.add('address-input');
+    
+    const inputAddress = document.createElement('input');
+    inputAddress.type = "text";
+    inputAddress.placeholder = "Enter Address";
 
-    <button id="addAddressBtn">Add Address</button>
-    <button id="finishBtn" style="display:none;">Finish</button>
+    const inputPostalCode = document.createElement('input');
+    inputPostalCode.type = "text";
+    inputPostalCode.placeholder = "Enter Postal Code";
+    
+    addressDiv.appendChild(inputAddress);
+    addressDiv.appendChild(inputPostalCode);
 
-    <div id="map"></div>
+    document.getElementById('addresses').appendChild(addressDiv);
+}
 
-    <script src="script.js"></script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap"></script>
-</body>
-</html>
+function calculateRoute() {
+    const addressInputs = document.querySelectorAll('.address-input');
+    addresses = [];
+    
+    addressInputs.forEach(inputDiv => {
+        const address = inputDiv.querySelector('input[type="text"]').value;
+        const postalCode = inputDiv.querySelector('input[type="text"]:nth-child(2)').value;
+        addresses.push({ address, postalCode });
+    });
+
+    if (addresses.length < 2) {
+        alert("Please enter at least two addresses.");
+        return;
+    }
+
+    map = L.map('map').setView([51.505, -0.09], 13); // Initialize map with default view
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    // Add markers and calculate route
+    const waypoints = [];
+    addresses.forEach((item, index) => {
+        const geocoder = new OpenCage.Geocoder('YOUR_API_KEY'); // Replace with your API key
+        geocoder.geocode(`${item.address}, ${item.postalCode}`).then(result => {
+            if (result.status.code === 200) {
+                const { lat, lng } = result.results[0].geometry;
+                const marker = L.marker([lat, lng]).addTo(map);
+                marker.bindPopup(`<b>${item.address}</b><br>${item.postalCode}`).openPopup();
+                
+                waypoints.push(L.latLng(lat, lng));
+
+                if (index === addresses.length - 1) {
+                    createRoute(waypoints);
+                }
+            } else {
+                alert('Error geocoding address: ' + item.address);
+            }
+        });
+    });
+}
+
+function createRoute(waypoints) {
+    const routingControl = L.Routing.control({
+        waypoints: waypoints,
+        routeWhileDragging: true,
+        lineOptions: {
+            styles: [{ color: colors[colorIndex++ % colors.length], weight: 4 }]
+        }
+    }).addTo(map);
+
+    // Draw route
+    routingControl.on('routesfound', function(event) {
+        const routes = event.routes;
+        routes.forEach((route, index) => {
+            routeLines.push(route);
+        });
+    });
+}
