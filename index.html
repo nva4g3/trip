@@ -5,23 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roundtrip Route Planner</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/opencage-geocoder@2.0.3/dist/index.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css"/>
 </head>
 <body>
     <h1>Roundtrip Route Planner</h1>
-    <p>Enter your addresses and click "Finish" to get the shortest route in a round trip.</p>
-
-    <div id="addresses">
+    <div id="address-list">
         <div class="address-input">
-            <input type="text" id="address-1" placeholder="Enter Address">
-            <input type="text" id="postal-code-1" placeholder="Enter Postal Code">
-            <button onclick="addAddress()">+</button>
+            <input type="text" placeholder="Enter Address">
+            <input type="text" placeholder="Enter Postal Code">
         </div>
     </div>
-    
+    <button onclick="addAddress()">Add Address</button>
     <button onclick="calculateRoute()">Finish</button>
-    <div id="map" style="height: 500px; margin-top: 20px;"></div>
+    
+    <div id="map"></div>
 
     <script src="script.js"></script>
 </body>

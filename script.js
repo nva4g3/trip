@@ -1,30 +1,20 @@
-let addresses = [];
 let map;
-let routeLines = [];
-let colorIndex = 0;
-const colors = ["#FF5733", "#33FF57", "#3357FF", "#F9A800", "#8E44AD"];
+let waypoints = [];
 
 function addAddress() {
-    const addressDiv = document.createElement('div');
-    addressDiv.classList.add('address-input');
-    
-    const inputAddress = document.createElement('input');
-    inputAddress.type = "text";
-    inputAddress.placeholder = "Enter Address";
-
-    const inputPostalCode = document.createElement('input');
-    inputPostalCode.type = "text";
-    inputPostalCode.placeholder = "Enter Postal Code";
-    
-    addressDiv.appendChild(inputAddress);
-    addressDiv.appendChild(inputPostalCode);
-
-    document.getElementById('addresses').appendChild(addressDiv);
+    const addressList = document.getElementById('address-list');
+    const newInputDiv = document.createElement('div');
+    newInputDiv.classList.add('address-input');
+    newInputDiv.innerHTML = `
+        <input type="text" placeholder="Enter Address">
+        <input type="text" placeholder="Enter Postal Code">
+    `;
+    addressList.appendChild(newInputDiv);
 }
 
 function calculateRoute() {
     const addressInputs = document.querySelectorAll('.address-input');
-    addresses = [];
+    const addresses = [];
     
     addressInputs.forEach(inputDiv => {
         const address = inputDiv.querySelector('input[type="text"]').value;
@@ -37,14 +27,17 @@ function calculateRoute() {
         return;
     }
 
-    map = L.map('map').setView([51.505, -0.09], 13); // Initialize map with default view
-    
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    // Initialize the map if it's not initialized
+    if (!map) {
+        map = L.map('map').setView([51.505, -0.09], 13);  // You can adjust the initial coordinates
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    }
 
-    // Add markers and calculate route
-    const waypoints = [];
+    // Reset the waypoints array
+    waypoints = [];
+
     addresses.forEach((item, index) => {
-        const geocoder = new OpenCage.Geocoder('YOUR_API_KEY'); // Replace with your API key
+        const geocoder = new OpenCage.Geocoder('YOUR_API_KEY');  // Replace with your OpenCage API Key
         geocoder.geocode(`${item.address}, ${item.postalCode}`).then(result => {
             if (result.status.code === 200) {
                 const { lat, lng } = result.results[0].geometry;
@@ -53,6 +46,7 @@ function calculateRoute() {
                 
                 waypoints.push(L.latLng(lat, lng));
 
+                // Once all addresses are geocoded, create the route
                 if (index === addresses.length - 1) {
                     createRoute(waypoints);
                 }
@@ -64,19 +58,11 @@ function calculateRoute() {
 }
 
 function createRoute(waypoints) {
-    const routingControl = L.Routing.control({
-        waypoints: waypoints,
-        routeWhileDragging: true,
-        lineOptions: {
-            styles: [{ color: colors[colorIndex++ % colors.length], weight: 4 }]
-        }
-    }).addTo(map);
-
-    // Draw route
-    routingControl.on('routesfound', function(event) {
-        const routes = event.routes;
-        routes.forEach((route, index) => {
-            routeLines.push(route);
-        });
-    });
+    // Make sure the directions are created only if waypoints exist
+    if (waypoints.length > 1) {
+        const routeControl = L.Routing.control({
+            waypoints: waypoints,
+            routeWhileDragging: true
+        }).addTo(map);
+    }
 }
