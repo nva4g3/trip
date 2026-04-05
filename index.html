@@ -52,12 +52,8 @@
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
-    <!-- Corrected OpenCage Geocoder CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/opencage-geocoder@2.0.3/dist/index.js"></script>
     <script>
-        // Replace with your OpenCage API Key
-        const geocoder = new OpenCage.Geocoder('5ed1ee9c4ffd4cb0b29afd7c94a1f999'); 
-        
+        const apiKey = '5ed1ee9c4ffd4cb0b29afd7c94a1f999';  // OpenCage API Key
         let addresses = [];
         let map = L.map('map').setView([51.505, -0.09], 13); // Default map location
 
@@ -65,7 +61,7 @@
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        // Add the first address
+        // Add the first address input field
         document.getElementById('addAddressBtn').addEventListener('click', () => {
             const newAddressInput = document.createElement('input');
             newAddressInput.type = 'text';
@@ -99,16 +95,20 @@
         // Geocode function using OpenCage API
         async function geocodeAddress(address, geocodedAddresses) {
             try {
-                const { results } = await geocoder.geocode(address);
-                if (results.length > 0) {
-                    const { lat, lng } = results[0].geometry;
+                const response = await fetch(`https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(address)}&key=${apiKey}`);
+                const data = await response.json();
+
+                if (data.results && data.results.length > 0) {
+                    const { lat, lng } = data.results[0].geometry;
                     geocodedAddresses.push(L.latLng(lat, lng));
                     const listItem = document.createElement('li');
                     listItem.textContent = address;
                     document.getElementById('addressList').appendChild(listItem);
+                } else {
+                    console.error('No results found for address:', address);
                 }
             } catch (error) {
-                console.error('Geocoding failed:', error);
+                console.error('Error in geocoding:', error);
             }
         }
 
