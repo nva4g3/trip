@@ -4,20 +4,123 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roundtrip Route Planner</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 10px;
+        }
+        #map {
+            width: 100%;
+            height: 500px;
+            margin-top: 20px;
+        }
+        input {
+            padding: 10px;
+            margin: 10px;
+            width: 250px;
+        }
+        button {
+            padding: 10px;
+            margin: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
 <body>
-    <h2>Roundtrip Route Planner</h2>
-    <p>Enter addresses and their zip codes below. We will organize the shortest route to make a round trip.</p>
 
-    <div id="addresses"></div>
+    <h1>Roundtrip Route Planner</h1>
+    <p>Enter your addresses and click "Finish" to get the shortest route in a round trip.</p>
 
+    <div id="addresses">
+        <input type="text" id="address1" placeholder="Enter address 1">
+    </div>
     <button id="addAddressBtn">Add Address</button>
     <button id="finishBtn" style="display:none;">Finish</button>
 
     <div id="map"></div>
+    <ul id="addressList"></ul>
 
-    <script src="script.js"></script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    <script src="https://unpkg.com/opencage-geocoder@2.0.3/dist/index.js"></script>
+    <script>
+        const geocoder = new OpenCage.Geocoder('YOUR_OPENCAGE_API_KEY'); // Replace with your OpenCage API key
+        let addresses = [];
+        let map = L.map('map').setView([51.505, -0.09], 13); // Default map location
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Add the first address
+        document.getElementById('addAddressBtn').addEventListener('click', () => {
+            const newAddressInput = document.createElement('input');
+            newAddressInput.type = 'text';
+            newAddressInput.placeholder = `Enter address ${addresses.length + 1}`;
+            document.getElementById('addresses').appendChild(newAddressInput);
+            addresses.push(newAddressInput);
+
+            if (addresses.length > 1) {
+                document.getElementById('finishBtn').style.display = 'inline-block';
+            }
+        });
+
+        // Handle Finish Button
+        document.getElementById('finishBtn').addEventListener('click', async () => {
+            const geocodedAddresses = [];
+
+            // Geocode the addresses
+            for (const input of addresses) {
+                const address = input.value.trim();
+                if (address) {
+                    await geocodeAddress(address, geocodedAddresses);
+                }
+            }
+
+            // Show the route on the map
+            if (geocodedAddresses.length > 1) {
+                calculateRoute(geocodedAddresses);
+            }
+        });
+
+        // Geocode function using OpenCage API
+        async function geocodeAddress(address, geocodedAddresses) {
+            try {
+                const { results } = await geocoder.geocode(address);
+                if (results.length > 0) {
+                    const { lat, lng } = results[0].geometry;
+                    geocodedAddresses.push(L.latLng(lat, lng));
+                    const listItem = document.createElement('li');
+                    listItem.textContent = address;
+                    document.getElementById('addressList').appendChild(listItem);
+                }
+            } catch (error) {
+                console.error('Geocoding failed:', error);
+            }
+        }
+
+        // Function to calculate the roundtrip route and display on the map
+        function calculateRoute(geocodedAddresses) {
+            const routingControl = L.Routing.control({
+                waypoints: geocodedAddresses,
+                routeWhileDragging: true,
+                createMarker: function() { return null; }, // Disable markers
+                optimizeWaypoints: true,
+            }).addTo(map);
+
+            map.fitBounds(routingControl.getBounds());
+        }
+    </script>
+
 </body>
 </html>
